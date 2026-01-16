@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>真点啊，你真捧场</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px 10px;
+            background: linear-gradient(135deg, #fff5f7, #fffafb, #ffffff);
+            background-size: 300% 300%;
+            animation: bgMove 25s ease infinite alternate;
+            font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+            overflow-x: hidden;
+            position: relative;
+        }
+        @keyframes bgMove {
+            0% { background-position: 0% 0%; }
+            100% { background-position: 100% 100%; }
+        }
+        .bg-heart {
+            position: absolute;
+            color: #f8c8d4;
+            font-size: 14px;
+            opacity: 0.3;
+            pointer-events: none;
+            animation: bgHeartFloat 18s linear infinite;
+            z-index: 1;
+        }
+        @keyframes bgHeartFloat {
+            0% { transform: translateY(110vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 0.6; }
+            90% { opacity: 0.6; }
+            100% { transform: translateY(-30px) rotate(720deg); opacity: 0; }
+        }
+        .container {
+            width: 90%;
+            max-width: 850px;
+            text-align: center;
+            padding: 40px 30px;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 38px;
+            box-shadow: 0 12px 40px rgba(229, 152, 155, 0.10),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(255, 182, 193, 0.18);
+            position: relative;
+            z-index: 2;
+            transition: transform 0.5s ease;
+            animation: containerGlow 10s ease infinite alternate;
+        }
+        @keyframes containerGlow {
+            0% { box-shadow: 0 8px 32px rgba(229, 152, 155, 0.12), 0 2px 10px rgba(212, 135, 141, 0.08);}
+            100% { box-shadow: 0 12px 40px rgba(229, 152, 155, 0.18), 0 4px 15px rgba(212, 135, 141, 0.12);}
+        }
+        .container:hover {
+            transform: translateY(-8px);
+        }
+        /* 嵌入式时间卡片 + 星期+时间同行 + 可互动小桌宠 ✨ */
+        .time-card {
+            width: 90%;
+            margin: 0 auto 25px;
+            text-align: center;
+            padding: 15px 20px;
+            background: rgba(255, 250, 252, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(229, 152, 155, 0.2);
+            position: relative;
+        }
+        /* 可互动小桌宠样式 - 悬浮旋转+点击跳动 */
+        .time-pet {
+            position: absolute;
+            top: 12px;
+            right: 18px;
+            font-size: 22px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 5;
+        }
+        .time-pet:hover {
+            transform: rotate(360deg) scale(1.2);
+        }
+        .time-pet:active {
+            transform: translateY(-3px) scale(1.3);
+        }
+        /* ✅ 星期 + 当前时间 同一行展示 核心修改 */
+        .time-week, .time-current {
+            display: inline-block;
+            font-weight: 500;
+            font-size: 1rem;
+        }
+        .time-week {
+            color: #999;
+            margin-right: 12px;
+        }
+        .time-current {
+            color: #666;
+        }
+        .time-countdown {
+            font-size: 1.1rem;
+            color: #e5989b;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+        /* 眼保健操 + 干饭提问 + 压力文案 统一文案样式 独立居中 */
+        .text-tip {
+            font-size: 1.35rem;
+            line-height: 1.9;
+            color: #555;
+            margin: 0 auto 30px;
+            padding: 0 10px;
+        }
+        /* 标题样式 - 带爱心图标装饰 */
+        .title-wrap {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        h1 {
+            background: linear-gradient(120deg, #e5989b, #d4878d, #b56576);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-size: 3.2rem;
+            font-weight: 750;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 8px rgba(229, 152, 155, 0.2);
+            padding: 0 15px;
+        }
+        .title-wrap:active h1 {
+            transform: scale(1.03);
+        }
+        /* ========== 极简抽选区 只留按钮+结果区 ========== */
+        .food-select-section {
+            margin: 30px auto;
+            padding: 25px 20px;
+            background: rgba(255, 250, 252, 0.95);
+            border-radius: 24px;
+            box-shadow: 0 8px 30px rgba(229, 152, 155, 0.1);
+            border: 1px solid rgba(255, 182, 193, 0.2);
+            max-width: 600px;
+        }
+        .food-title {
+            color: #b56576;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 25px;
+            letter-spacing: 1px;
+        }
+        /* 抽选按钮 样式不变 */
+        .select-button {
+            padding: 12px 35px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: white;
+            background: linear-gradient(135deg, #e5989b, #d4878d);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(229, 152, 155, 0.3);
+            margin-bottom: 20px;
+        }
+        .select-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(229, 152, 155, 0.4);
+            background: linear-gradient(135deg, #d4878d, #b56576);
+        }
+        .select-button:active {
+            transform: translateY(1px);
+        }
+        .select-button.selecting {
+            background: #aaa;
+            cursor: not-allowed;
+        }
+        /* 结果展示区 + 高亮动效 不变 */
+        .result-display {
+            margin-top: 0;
+            padding: 18px 15px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 18px;
+            border: 2px dashed #e5989b;
+            font-size: 1.2rem;
+            color: #b56576;
+            font-weight: 700;
+            min-height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        .result-display.highlight {
+            animation: resultPulse 0.5s ease 3;
+            background: rgba(255, 182, 193, 0.15);
+        }
+        @keyframes resultPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        /* 图片样式 - 完整保留你的两张图片 */
+        .img-container {
+            margin: 25px auto;
+            position: relative;
+        }
+        img {
+            max-width: 75%;
+            border-radius: 24px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.09);
+            transition: all 0.7s cubic-bezier(0.23, 1, 0.32, 1);
+            cursor: pointer;
+            display: block;
+            margin: 0 auto;
+        }
+        img:hover {
+            transform: scale(1.05) translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        }
+        .img-fallback {
+            width: 75%;
+            margin: 20px auto;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #f9f0f2, #fef8f9);
+            border-radius: 24px;
+            color: #d4878d;
+            font-size: 1.1rem;
+            box-shadow: 0 6px 20px rgba(229, 152, 155, 0.08);
+            border: 2px dashed #f0b7c0;
+        }
+        /* 正文样式 */
+        .text-wrap {
+            margin: 30px auto;
+            max-width: 680px;
+            opacity: 0;
+            animation: fadeInUp 1s ease 0.5s forwards;
+        }
+        @keyframes fadeInUp {
+            to { opacity: 1; }
+        }
+        /* ✅ 压力鼓励文案 独立样式 居中展示 */
+        .stress-text {
+            font-size: 1.35rem;
+            line-height: 1.9;
+            color: #555;
+            margin: 0 auto 20px;
+            padding: 0 10px;
+        }
+        .stress-text .highlight {
+            display: inline-block;
+            color: #b56576;
+            font-weight: 700;
+            background: linear-gradient(to right, rgba(245, 208, 214, 0.4), rgba(229, 152, 155, 0.25));
+            padding: 10px 22px;
+            border-radius: 50px;
+            margin: 10px 0;
+            transition: all 0.4s ease;
+            font-size: 1.5rem;
+        }
+        .stress-text .highlight:hover {
+            background: linear-gradient(to right, rgba(245, 208, 214, 0.6), rgba(229, 152, 155, 0.4));
+            transform: scale(1.03);
+            box-shadow: 0 4px 15px rgba(229, 152, 155, 0.2);
+        }
+        /* 底部样式 */
+        .footer-decor {
+            width: 180px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #f0b7c0 20%, #f0b7c0 80%, transparent);
+            margin: 40px auto 20px;
+            opacity: 0.7;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .footer-decor::after {
+            content: "♥";
+            color: #e5989b;
+            font-size: 20px;
+            position: absolute;
+            top: -11px;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: heartBeat 2.2s ease-in-out infinite alternate;
+        }
+        @keyframes heartBeat {
+            0% { transform: translateX(-50%) scale(0.95); }
+            100% { transform: translateX(-50%) scale(1.1); }
+        }
+        .footer-decor:hover::after {
+            animation: heartBeat 0.7s ease-in-out infinite alternate;
+            color: #d4878d;
+        }
+        .heart {
+            position: absolute;
+            color: #e5989b;
+            font-size: 22px;
+            pointer-events: none;
+            animation: heartFall 2.5s ease-out forwards;
+            z-index: 100;
+        }
+        @keyframes heartFall {
+            0% { opacity: 1; transform: translateY(0) rotate(0deg); }
+            100% { opacity: 0; transform: translateY(250px) rotate(720deg); }
+        }
+        /* 响应式适配 */
+        @media (max-width: 768px) {
+            .container { padding: 30px 20px; border-radius: 30px; }
+            h1 { font-size: 2.6rem; }
+            .text-tip, .stress-text { font-size: 1.2rem; }
+            .stress-text .highlight { font-size: 1.3rem; }
+            .food-title { font-size: 1.3rem; }
+            img { max-width: 90%; }
+            .select-button { font-size: 1rem; padding:10px 30px; }
+            .result-display { font-size: 1.1rem; }
+            .time-pet { font-size: 18px; right: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- ✅ 标题：真点啊，你真捧场 + 左右爱心小图标装饰 -->
+        <div class="title-wrap" id="titleWrap">
+            <h1>❤️ 真点啊，你真捧场 ❤️</h1>
+        </div>
+        
+        <!-- ✅ 时间组件 + 星期+时间同行 + 可互动小桌宠 ✨ -->
+        <div class="time-card">
+            <div class="time-pet" id="timePet">🐱</div>
+            <div class="time-week" id="currentWeek">星期X</div>
+            <div class="time-current" id="currentTime">--:--:--</div>
+            <div class="time-countdown" id="countdownTime">距离下班: --:--:--</div>
+        </div>
+
+        <!-- ✅ 眼保健操文案 独立居中 -->
+        <div class="text-tip">朋友，既然这样那休息一下，做个眼保健操</div>
+        
+        <!-- 第一张图片 完整保留 -->
+        <div class="img-container">
+            <img src="https://s41.ax1x.com/2026/01/15/pZrw3RA.jpg" alt="温馨插图" 
+                 onerror="this.style.display='none'; document.getElementById('fallback1').style.display='block';">
+            <div class="img-fallback" id="fallback1" style="display:none;">
+                🎨 图片去散步啦~<br>但问候已送达：休息一下，做个眼保健操吧！
+            </div>
+        </div>
+        
+        <div class="text-wrap">
+            <!-- ✅ 独立文案：又不知道吃啥了...帮我抽个？？ 跟眼保健操样式完全一致 -->
+            <div class="text-tip">又不知道吃啥了...帮我抽个？？</div>
+
+            <!-- ✅ 极简抽选区 只保留按钮+结果区 -->
+            <div class="food-select-section">
+                <div class="food-title">今天吃什么？</div>
+                <button class="select-button" id="selectButton">点我抽选！决定今天吃什么</button>
+                <div class="result-display" id="resultDisplay">
+                    点击上方按钮，随机抽取今日干饭目标～
+                </div>
+            </div>
+
+            <!-- ✅ 核心修改：这句话单独一行+精准位置【抽奖板块下、最后一张图上】 -->
+            <div class="stress-text">最后呢，如果现在压力很大，没关系<br>
+            <span class="highlight">"煎"和"熬"都是可以变美味的方式，"加油"也是噢0v0~</span></div>
+
+            <!-- 第二张图片 完整保留 -->
+            <div class="img-container">
+                <img src="https://s41.ax1x.com/2026/01/15/pZrwP54.jpg" alt="鼓励插图"
+                     onerror="this.style.display='none'; document.getElementById('fallback2').style.display='block';">
+                <div class="img-fallback" id="fallback2" style="display:none;">
+                    🌟 这里本有一张温暖图片<br>它说："加油"是让一切变美味的方式哦！
+                </div>
+            </div>
+        </div>
+        
+        <!-- 底部装饰 -->
+        <div class="footer-decor" id="footerDecor"></div>
+    </div>
+
+    <script>
+        // ==================== 1. 实时时间+星期同行+距离下班倒计时 ✅ 核心修改 ✅ ====================
+        const weekArr = ['周日','周一','周二','周三','周四','周五','周六'];
+        const petIcons = ['🐱','🐹','🐰','🦊','🐻','✨','🌸','🍡','🥳','🌟'];
+        let currentPetIndex = 0;
+        const timePet = document.getElementById('timePet');
+        
+        function updateTime() {
+            const now = new Date();
+            const week = weekArr[now.getDay()];
+            const timeStr = now.toLocaleTimeString('zh-CN', { hour12: false });
+            document.getElementById('currentWeek').textContent = week;
+            document.getElementById('currentTime').textContent = timeStr;
+            
+            const offWorkTime = new Date(now);
+            offWorkTime.setHours(18, 30, 0, 0);
+            
+            let diffMs = offWorkTime - now;
+            
+            if (diffMs < 0) {
+                document.getElementById('countdownTime').textContent = "🎉 已下班！";
+                document.getElementById('countdownTime').style.color = "#4CAF50";
+            } else {
+                const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                diffMs %= (1000 * 60 * 60);
+                const diffMinutes = Math.floor(diffMs / (1000 * 60));
+                diffMs %= (1000 * 60);
+                const diffSeconds = Math.floor(diffMs / 1000);
+                
+                let color = "#e5989b";
+                if (diffHours < 1) color = "#ff6b6b";
+                else if (diffHours < 3) color = "#ffa726";
+                
+                // ✅ 文字修改：下班 → 距离下班
+                document.getElementById('countdownTime').innerHTML = 
+                    `距离下班: <span style="color:${color}">${diffHours.toString().padStart(2, '0')}:${diffMinutes.toString().padStart(2, '0')}:${diffSeconds.toString().padStart(2, '0')}</span>`;
+            }
+        }
+        // 桌宠点击切换表情
+        timePet.addEventListener('click', ()=>{
+            currentPetIndex = Math.floor(Math.random() * petIcons.length);
+            timePet.textContent = petIcons[currentPetIndex];
+        })
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        // ==================== ✅ 核心：海量菜品+甜品+无厘头搞笑款（同事/奥特曼/LV等）+施法抽选动效 ✅ ====================
+        const foodOptions = [
+            // ===== 正餐类 超多 =====
+            "麻辣香锅", "黄焖鸡米饭", "披萨", "螺蛳粉", "牛肉面", "寿司", "炸鸡", "烤肉饭",
+            "麻辣烫", "酸菜鱼", "汉堡", "煲仔饭", "米线", "小龙虾", "咖喱饭", "煎饼果子",
+            "蛋炒饭", "盖浇饭", "手抓饼", "关东煮", "烤冷面", "花甲粉", "过桥米线", "麻辣拌",
+            "石锅拌饭", "部队火锅", "炸鸡排", "烤鸭", "烧腊饭", "水煮鱼", "麻辣小龙虾", "猪肚鸡",
+            "沙县小吃", "兰州拉面", "鸭血粉丝汤", "生煎包", "锅贴", "馄饨", "饺子", "小笼包",
+            "冒菜", "串串香", "钵钵鸡", "热干面", "炸酱面", "油泼面", "刀削面", "花甲米线",
+            // ===== 甜品饮品 超多 =====
+            "珍珠奶茶", "草莓蛋糕", "芒果班戟", "冰淇淋甜筒", "葡式蛋挞", "奥利奥泡芙", "杨枝甘露",
+            "芋泥波波冰", "双皮奶", "烧仙草", "提拉米苏", "芝士蛋糕", "雪媚娘", "麻薯", "红糖糍粑",
+            "水果捞", "酸奶碗", "焦糖布丁", "椰汁西米露", "绿豆汤", "酸梅汤", "柠檬茶", "气泡水",
+            // ===== 你指定的无厘头款+少量趣味款 =====
+            "同事", "奥特曼", "LV", "香奈儿", "银行卡", "老板画的饼", "摸鱼", "工位", "键盘",
+            "文具盒", "粑粑", "树叶子", "粉笔头", "作业本", "小石头", "西北风", "空气", "白开水"
+        ];
+        
+        let isSelecting = false;
+        let rollTimer = null;
+        const selectButton = document.getElementById('selectButton');
+        const resultDisplay = document.getElementById('resultDisplay');
+        
+        function randomSelectFood() {
+            if (isSelecting) return;
+            isSelecting = true;
+            
+            selectButton.classList.add('selecting');
+            selectButton.textContent = "施法中...";
+            resultDisplay.classList.remove('highlight');
+
+            // ✨ 高速滚动→减速 施法抽选动效
+            let rollSpeed = 50;
+            let rollTimes = 0;
+            rollTimer = setInterval(() => {
+                const randomIndex = Math.floor(Math.random() * foodOptions.length);
+                resultDisplay.textContent = `🎡 正在施法：${foodOptions[randomIndex]} 🎡`;
+                rollTimes++;
+                if (rollTimes > 15) rollSpeed += 20;
+                if (rollTimes > 25) rollSpeed += 30;
+            }, rollSpeed);
+
+            setTimeout(() => {
+                clearInterval(rollTimer);
+                const randomIndex = Math.floor(Math.random() * foodOptions.length);
+                const selectedFood = foodOptions[randomIndex];
+                
+                resultDisplay.textContent = `🎉 今日干饭：${selectedFood} 🎉`;
+                resultDisplay.classList.add('highlight');
+                
+                selectButton.classList.remove('selecting');
+                selectButton.textContent = "再来一次！换一个";
+                createHearts(resultDisplay, 8);
+                isSelecting = false;
+            }, 1800);
+        }
+        
+        selectButton.addEventListener('click', randomSelectFood);
+
+        // ==================== 爱心互动效果 所有特效完整保留 无改动 ====================
+        function createHearts(parent, num = 12) {
+            for(let i = 0; i < num; i++) {
+                const heart = document.createElement('span');
+                heart.className = 'heart';
+                heart.innerText = Math.random() > 0.5 ? '♥' : '💖';
+                heart.style.left = Math.random() * 100 + '%';
+                heart.style.animationDelay = Math.random() * 1.5 + 's';
+                heart.style.fontSize = (Math.random() * 12 + 18) + 'px';
+                if (parent === resultDisplay) {
+                    heart.style.top = '50%';
+                    heart.style.left = '50%';
+                }
+                parent.appendChild(heart);
+                setTimeout(() => heart.remove(), 2500);
+            }
+        }
+        
+        document.getElementById('titleWrap').addEventListener('click', () => createHearts(titleWrap, 18));
+        document.getElementById('footerDecor').addEventListener('click', (e) => createHearts(e.currentTarget, 10));
+        
+        setInterval(() => {
+            const bgHeart = document.createElement('span');
+            bgHeart.className = 'bg-heart';
+            bgHeart.innerText = Math.random() > 0.7 ? '💕' : '♥';
+            bgHeart.style.left = Math.random() * 100 + '%';
+            bgHeart.style.animationDuration = (Math.random() * 10 + 15) + 's';
+            document.body.appendChild(bgHeart);
+            setTimeout(() => bgHeart.remove(), 18000);
+        }, 1200);
+    </script>
+</body>
+</html>

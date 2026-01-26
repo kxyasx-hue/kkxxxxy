@@ -1,3 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>散步路线记录</title>
+    <!-- 替换成你的高德API Key -->
+    <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=2a3c5f9d19cff39278836ddd2b3674e7"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "微软雅黑";
+        }
+        body {
+            padding: 10px;
+            background-color: #f5f5f5;
+        }
+        #mapContainer {
+            width: 100%;
+            height: 70vh; /* 适配手机高度，占70%屏幕 */
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #eee;
+        }
+        .control-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 6px;
+            background-color: #0088ff;
+            color: white;
+            font-size: 15px;
+            cursor: pointer;
+            flex: 1; /* 按钮自适应手机宽度 */
+            min-width: 120px;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        button:hover:not(:disabled) {
+            background-color: #0066cc;
+        }
+        .color-select {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 8px;
+            width: 100%;
+        }
+        .color-select label {
+            font-size: 14px;
+            color: #333;
+        }
+        input[type="color"] {
+            width: 35px;
+            height: 35px;
+            border: none;
+            cursor: pointer;
+        }
+        .watermark-setting {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            margin-top: 8px;
+            width: 100%;
+        }
+        .watermark-setting label {
+            font-size: 14px;
+            color: #333;
+        }
+        input[type="number"] {
+            width: 60px;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        #statusText {
+            font-size: 14px;
+            color: #666;
+            margin-top: 8px;
+            width: 100%;
+        }
+        /* 预览弹窗样式增强 */
+        .preview-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 99999; /* 确保弹窗在最上层 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .preview-img {
+            max-width: 95%;
+            max-height: 90%;
+            border: 3px solid #fff;
+            border-radius: 4px;
+        }
+        .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 8px 15px;
+            background: #ff4444;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div id="mapContainer"></div>
+
+    <div class="control-panel">
+        <button id="startBtn">开始绘制</button>
+        <button id="stopBtn" disabled>停止绘制</button>
+        <button id="previewBtn" disabled>预览路线</button>
+        <button id="saveBtn" disabled>保存图片</button>
+        
+        <div class="color-select">
+            <label>路线颜色：</label>
+            <input type="color" id="routeColor" value="#FF6B6B">
+        </div>
+        
+        <div class="watermark-setting">
+            <label>水印颜色：</label>
+            <input type="color" id="watermarkColor" value="#000000">
+            <label>水印字号：</label>
+            <input type="number" id="watermarkSize" value="12" min="8" max="30">
+        </div>
+        
+        <span id="statusText">未开始记录 | 请先允许定位权限</span>
+    </div>
+
+    <script>
+        let map;
+        let isRecording = false;
+        let currentPosition = null;
+        let routePoints = [];
+        let routeLine = null;
+        let geolocation;
+        let watchId = null;
+
+        // 页面加载初始化
+        window.onload = function() {
+            // 适配手机触摸事件
+            document.addEventListener('touchstart', function(e) {}, {passive: true});
+            initMap();
+            bindEvents();
+        };
+
+        // 初始化地图和定位（适配手机）
+        function initMap() {
+            map = new AMap.Map('mapContainer', {
+                zoom: 19,
+                resizeEnable: true,
+                mapStyle: 'amap://styles/normal',
+                touchZoomCenter: 1 // 手机双指缩放以中心点为准
+            });
+
+            // 加载高德定位插件（关闭自动弹窗）
+            map.plugin('AMap.Geolocation', function() {
+                geolocation = new AMap.Geolocation({
+                    enableHighAccuracy: true,
+                    timeout: 15000,
+                    buttonPosition: 'RB',
+                    buttonOffset: new AMap.Pixel(10, 20),
+                    maximumAge: 0,
+                    convert: true,
+                    showButton: false, // 隐藏高德定位按钮
+                    showMarker: true, // 显示当前位置标记
+                    showCircle: true,
+                    panToLocation: true
+                });
+
+                map.addControl(geolocation);
+
+                // 首次定位（仅一次授权）
+                geolocation.getCurrentPosition(function(status, result) {
+                    if (status === 'complete') {
+                        currentPosition = result.position;
+                        map.setCenter(currentPosition);
+                        document.getElementById('statusText').textContent = '✅ 已定位到你的位置，可开始记录';
+                    } else {
+                        document.getElementById('statusText').textContent = '❌ 定位失败：' + result.info + ' | 请检查定位权限';
+                        // 手动触发授权提示
+                        alert('请在浏览器设置中开启定位权限，否则无法使用！');
+                    }
+                });
+            });
+        }
+
+        // 绑定所有事件（适配手机触摸）
+        function bindEvents() {
+            // 开始绘制
+            document.getElementById('startBtn').addEventListener('click', function() {
+                if (!currentPosition) {
+                    alert('请先完成定位！\n1. 开启手机定位\n2. 允许浏览器获取位置');
+                    return;
+                }
+
+                routePoints = [];
+                routePoints.push([currentPosition.lng, currentPosition.lat]);
+                
+                isRecording = true;
+                this.disabled = true;
+                document.getElementById('stopBtn').disabled = false;
+                document.getElementById('previewBtn').disabled = true;
+                document.getElementById('saveBtn').disabled = true;
+                document.getElementById('statusText').textContent = '📌 正在记录路线，请移动...';
+
+                // 手机端稳定定位（3秒一次，减少授权请求）
+                watchId = setInterval(function() {
+                    geolocation.getCurrentPosition(function(status, result) {
+                        if (status === 'complete') {
+                            const newLng = result.position.lng;
+                            const newLat = result.position.lat;
+                            // 过滤重复点位（避免静止时重复记录）
+                            if (routePoints.length === 0 || 
+                                (Math.abs(routePoints[routePoints.length-1][0] - newLng) > 0.00001 || 
+                                 Math.abs(routePoints[routePoints.length-1][1] - newLat) > 0.00001)) {
+                                routePoints.push([newLng, newLat]);
+                                updateRouteLine();
+                                map.setCenter(result.position);
+                            }
+                        } else {
+                            console.log('位置更新失败：', result.info);
+                        }
+                    });
+                }, 3000); // 3秒更新一次，适配步行速度
+            });
+
+            // 停止绘制
+            document.getElementById('stopBtn').addEventListener('click', function() {
+                if (watchId) {
+                    clearInterval(watchId);
+                    watchId = null;
+                }
+
+                isRecording = false;
+                this.disabled = true;
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('previewBtn').disabled = false;
+                document.getElementById('saveBtn').disabled = false;
+                document.getElementById('statusText').textContent = '✅ 路线记录完成 | 共记录 ' + routePoints.length + ' 个点位';
+
+                updateRouteLine();
+            });
+
+            // 预览路线图片（手机端增强弹窗）
+            document.getElementById('previewBtn').addEventListener('click', function() {
+                if (routePoints.length < 2) {
+                    alert('路线点位过少！请先行走一段距离再预览');
+                    return;
+                }
+
+                map.plugin(['AMap.MapSnapshot'], function() {
+                    const snapshot = new AMap.MapSnapshot(map, {
+                        width: map.getSize().width,
+                        height: map.getSize().height,
+                        visible: true
+                    });
+
+                    snapshot.on('complete', function(data) {
+                        // 创建预览弹窗（适配手机）
+                        const modal = document.createElement('div');
+                        modal.className = 'preview-modal';
+                        
+                        const img = new Image();
+                        img.className = 'preview-img';
+                        img.src = data;
+                        
+                        const closeBtn = document.createElement('button');
+                        closeBtn.className = 'close-btn';
+                        closeBtn.textContent = '关闭预览';
+                        closeBtn.onclick = function() {
+                            document.body.removeChild(modal);
+                        };
+
+                        modal.appendChild(img);
+                        modal.appendChild(closeBtn);
+                        document.body.appendChild(modal);
+                    });
+
+                    snapshot.take();
+                });
+            });
+
             // 保存路线图片（手机端优化）
             document.getElementById('saveBtn').addEventListener('click', function() {
                 if (routePoints.length < 2) {
